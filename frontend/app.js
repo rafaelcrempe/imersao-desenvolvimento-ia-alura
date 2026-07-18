@@ -59,6 +59,70 @@ async function preencherFigurinhas() {
     }
 }
 
+// ===================================================
+// MODAL: Abrir / fechar detalhes da figurinha
+// ===================================================
+function inicializarModal() {
+    const modal       = document.getElementById("modal-figurinha");
+    const modalImg    = document.getElementById("modal-img");
+    const modalName   = document.getElementById("modal-name");
+    const modalRole   = document.getElementById("modal-role");
+    const modalClose  = document.getElementById("modal-close");
+
+    // Abre o modal ao clicar num slot que já tem figurinha colada
+    document.querySelectorAll(".sticker-slot").forEach(slot => {
+        slot.addEventListener("click", () => {
+            // Só abre se o slot estiver preenchido (tem imagem carregada)
+            if (!slot.classList.contains("slot-preenchido")) return;
+
+            // Extrai dados do slot
+            const img  = slot.querySelector(".sticker-img");
+            const nome = slot.querySelector(".slot-name");
+            const role = slot.querySelector(".slot-role");
+
+            if (!img) return;
+
+            // Popula o modal
+            modalImg.src = img.src;
+            modalImg.alt = img.alt;
+            modalName.textContent = nome ? nome.textContent : "";
+            modalRole.textContent = role  ? role.textContent : "";
+
+            // Mostra o modal (remove hidden e adiciona classe de animação)
+            modal.classList.remove("hidden");
+            // Força o reflow para que a transição CSS funcione
+            void modal.offsetWidth;
+            modal.classList.add("modal-visible");
+        });
+    });
+
+    // Fecha ao clicar no botão ×
+    modalClose.addEventListener("click", fecharModal);
+
+    // Fecha ao clicar no fundo escuro (fora do cartão)
+    modal.addEventListener("click", (e) => {
+        if (e.target === modal) fecharModal();
+    });
+
+    // Fecha ao pressionar Escape
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && modal.classList.contains("modal-visible")) {
+            fecharModal();
+        }
+    });
+
+    function fecharModal() {
+        modal.classList.remove("modal-visible");
+        // Aguarda a animação de saída antes de esconder com hidden
+        modal.addEventListener("transitionend", function handler() {
+            if (!modal.classList.contains("modal-visible")) {
+                modal.classList.add("hidden");
+            }
+            modal.removeEventListener("transitionend", handler);
+        });
+    }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
     const bookElement = document.getElementById("book");
     const btnPrev = document.getElementById("btn-prev");
@@ -204,8 +268,8 @@ document.addEventListener("DOMContentLoaded", () => {
         bookElement.style.display = "block";
 
         // Dia 3: Busca as figurinhas da API e preenche o álbum
-        // A função é async, chamamos sem await para não bloquear a inicialização do álbum
-        preencherFigurinhas();
+        // Após preencher, inicializa o modal para cliques nas figurinhas
+        preencherFigurinhas().then(() => inicializarModal());
 
     } catch (error) {
         console.error("Erro ao inicializar a biblioteca PageFlip:", error);
